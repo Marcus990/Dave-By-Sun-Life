@@ -342,6 +342,15 @@ const ETFPicker: FC = () => {
             />
           </div>
           
+          {/* Add the account type display */}
+          {selectedAccount && (
+            <div className="absolute top-[150px] left-8">
+              <div className="px-8 py-2 bg-white hover:bg-gray-100 text-black text-2xl font-bold rounded-2xl shadow-xl">
+                {selectedAccount}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col items-center justify-center">
             <div className="flex flex-row items-start justify-center space-x-12">
               {/* Bucket Column */}
