@@ -11,3 +11,5 @@ Back-End: Node.js, Python, Flask
 Database: MongoDB
 
 Utilized prompt engineering to create a custom prompt to extract a JSON file from my LLM pipeline that my AI Agent Dave is comprised of.
+
+Stock Ticker Symbol API: https://github.com/yashwanth2804/TickerSymbol?tab=readme-ov-file
