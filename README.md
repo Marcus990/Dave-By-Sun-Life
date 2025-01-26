@@ -6,10 +6,8 @@ To run front-end: ```cd frontend -> npm run dev```
 To run back-end on virtual env: ```cd backend -> python3 -m venv venv -> source venv/bin/activate -> python3 run.py```
 
 Tech Stack:
-Front-End: React, Tailwind CSS, Next.js
-
-Back-End: Node.js, Python, Flask
-
+Front-End: React, Tailwind CSS, Next.js  
+Back-End: Node.js, Python, Flask  
 Database: MongoDB
 
 Utilized prompt engineering to create a custom prompt to extract a JSON file from my LLM pipeline that my AI Agent Dave is comprised of.
