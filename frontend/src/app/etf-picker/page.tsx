@@ -14,10 +14,6 @@ interface StockResult {
 
 const API_BASE_URL = 'http://localhost:8000';
 
-const handleAnimationComplete = () => {
-    console.log('All letters have animated!');
-  };
-  
 const ETFPicker: FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -25,9 +21,16 @@ const ETFPicker: FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedTickers, setSelectedTickers] = useState<StockResult[]>([])
   const [isBouncing, setIsBouncing] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [buttonPosition, setButtonPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [investmentAmount, setInvestmentAmount] = useState<string>('')
 
   const router = useRouter()
 
+  const handleAnimationComplete = () => {
+    console.log('All letters have animated!');
+  };
+  
   // Debounced search function
   useEffect(() => {
     const fetchStocks = async () => {
@@ -69,87 +72,7 @@ const ETFPicker: FC = () => {
     return () => clearTimeout(timeoutId)
   }, [searchTerm])
 
-  useEffect(() => {
-    if (!canvasRef.current) return
-
-    const scene = new THREE.Scene()
-    scene.background = null
-    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
-    
-    const renderer = new THREE.WebGLRenderer({ 
-      canvas: canvasRef.current, 
-      antialias: true,
-      alpha: true,
-      preserveDrawingBuffer: true
-    })
-
-    renderer.outputColorSpace = THREE.SRGBColorSpace
-    renderer.setClearColor(0x000000, 0)
-    renderer.setSize(500, 500)
-    
-    // Adjust camera position to see full bucket
-    camera.position.z = 5
-    camera.position.y = -0.5 // Move camera down slightly
-
-    // Adjust lighting setup
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1)  // Reduced intensity
-    scene.add(ambientLight)
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
-    directionalLight.position.set(1, 1, 1)  // Adjusted light position
-    scene.add(directionalLight)
-
-    let model: THREE.Group
-
-    const controls = new OrbitControls(camera, renderer.domElement)
-    // Limit controls to only rotation
-    controls.enableZoom = false
-    controls.enablePan = false
-    controls.minPolarAngle = Math.PI / 2 - 0.5 // Limit vertical rotation
-    controls.maxPolarAngle = Math.PI / 2 + 0.5
-    controls.dampingFactor = 0.05
-    controls.enableDamping = true
-
-    // Load Model with material modifications
-    const loader = new GLTFLoader()
-    loader.load(
-      '/yellowbucketmodel.glb',
-      (gltf) => {
-        model = gltf.scene
-        model.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshStandardMaterial({
-              color: 0xFFD700,
-              metalness: 0.3,
-              roughness: 0.4,
-            })
-          }
-        })
-        model.scale.set(1.75, 1.75, 1.75)
-        model.position.set(0, -0.5, 0)
-        scene.add(model)
-      },
-      undefined,
-      (error) => console.error('Error loading model:', error)
-    )
-
-    // Animation loop with rotation
-    const animate = () => {
-      requestAnimationFrame(animate)
-      controls.update()
-      renderer.render(scene, camera)
-    }
-    animate()
-
-    // Cleanup
-    return () => {
-      scene.clear()
-      renderer.dispose()
-    }
-  }, [])
-
   const handleTickerSelect = (ticker: StockResult) => {
-    // Check if ticker already exists in the list
     if (!selectedTickers.some(t => t.symbol === ticker.symbol)) {
       setSelectedTickers([...selectedTickers, ticker])
       // Trigger bounce animation
@@ -166,9 +89,9 @@ const ETFPicker: FC = () => {
     style.textContent = `
       @keyframes bucketBounce {
         0%, 100% { transform: translateY(0); }
-        20% { transform: translateY(20px) rotate(-5deg); }
-        40% { transform: translateY(10px) rotate(3deg); }
-        60% { transform: translateY(15px) rotate(-3deg); }
+        20% { transform: translateY(20px) rotate(-10deg); }
+        40% { transform: translateY(10px) rotate(7deg); }
+        60% { transform: translateY(15px) rotate(-5deg); }
         80% { transform: translateY(5px) rotate(2deg); }
       }
     `
@@ -178,9 +101,46 @@ const ETFPicker: FC = () => {
     }
   }, [])
 
+  // Track button position
+  useEffect(() => {
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect()
+        setButtonPosition({
+          x: rect.left,
+          y: rect.top
+        })
+      }
+    }
+
+    // Initial position
+    updatePosition()
+
+    // Update position on resize and scroll
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition)
+    
+    // Create an observer to watch for height changes in the ticker list
+    const observer = new ResizeObserver(updatePosition)
+    if (buttonRef.current) {
+      observer.observe(buttonRef.current.parentElement || buttonRef.current)
+    }
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition)
+      observer.disconnect()
+    }
+  }, [selectedTickers.length]) // Re-run when ticker list changes
+
   const handleAskDave = async () => {
     if (selectedTickers.length === 0) {
       alert('Please select some tickers first!')
+      return
+    }
+
+    if (!investmentAmount || parseFloat(investmentAmount) <= 0) {
+      alert('Please enter a valid investment amount!')
       return
     }
 
@@ -193,7 +153,8 @@ const ETFPicker: FC = () => {
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          tickers: selectedTickers
+          tickers: selectedTickers,
+          investmentAmount: parseFloat(investmentAmount)
         })
       })
 
@@ -214,6 +175,89 @@ const ETFPicker: FC = () => {
       setIsLoading(false)
     }
   }
+
+  // Add this useEffect for the bucket setup
+  useEffect(() => {
+    if (!canvasRef.current) return
+
+    const scene = new THREE.Scene()
+    scene.background = null
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
+    
+    const renderer = new THREE.WebGLRenderer({ 
+      canvas: canvasRef.current, 
+      antialias: true,
+      alpha: true,
+      preserveDrawingBuffer: true
+    })
+
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.setClearColor(0x000000, 0)
+    renderer.setSize(500, 500)
+    
+    camera.position.z = 5
+    camera.position.y = -0.5
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1)
+    scene.add(ambientLight)
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+    directionalLight.position.set(1, 1, 1)
+    scene.add(directionalLight)
+
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableZoom = false
+    controls.enablePan = false
+    controls.minPolarAngle = Math.PI / 2 - 0.5
+    controls.maxPolarAngle = Math.PI / 2 + 0.5
+    controls.dampingFactor = 0.05
+    controls.enableDamping = true
+    controls.autoRotate = true
+    controls.autoRotateSpeed = 2
+
+    // Load bucket model
+    const loader = new GLTFLoader()
+    loader.load(
+      '/yellowbucketmodel.glb',
+      (gltf) => {
+        const model = gltf.scene
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.name.toLowerCase().includes('handle') || child.position.y > 0) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0xFFFFFF,
+                metalness: 0.3,
+                roughness: 0.4,
+              })
+            } else {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0xFFD700,
+                metalness: 0.3,
+                roughness: 0.4,
+              })
+            }
+          }
+        })
+        model.scale.set(1.75, 1.75, 1.75)
+        model.position.set(0, -0.5, 0)
+        scene.add(model)
+      },
+      undefined,
+      (error) => console.error('Error loading model:', error)
+    )
+
+    const animate = () => {
+      requestAnimationFrame(animate)
+      controls.update()
+      renderer.render(scene, camera)
+    }
+    animate()
+
+    return () => {
+      scene.clear()
+      renderer.dispose()
+    }
+  }, [])
 
   return (
     <main className="min-h-screen relative overflow-auto bg-black">
@@ -253,9 +297,8 @@ const ETFPicker: FC = () => {
               {/* Bucket Column */}
               <div className="flex flex-col items-center">
                 <div 
-                  className={`w-[500px] h-[500px] flex items-center justify-center transition-all ${
-                    isBouncing ? 'animate-[bucketBounce_1s_ease-in-out]' : ''
-                  }`}
+                  className={`w-[500px] h-[500px] flex items-center justify-center transition-all relative
+                    ${isBouncing ? 'animate-[bucketBounce_1s_ease-in-out]' : ''}`}
                 >
                   <canvas ref={canvasRef} className="w-full h-full" />
                 </div>
@@ -271,7 +314,7 @@ const ETFPicker: FC = () => {
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full p-4 pr-12 text-lg rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-300 shadow-lg"
-                      placeholder="Search stock tickers... (e.g., AAPL)"
+                      placeholder="search stock tickers... (e.g., AAPL)"
                     />
                     <button className="absolute right-4 top-1/2 transform -translate-y-1/2">
                       {isLoading ? '⌛' : '🔍'}
@@ -296,11 +339,11 @@ const ETFPicker: FC = () => {
                 </div>
 
                 {/* Tickers List */}
-                <div className="w-full mb-5">
-                  <h3 className="text-white text-center text-xl font-semibold mb-2">tickers in your bucket</h3>
+                <div className="w-full mb-8">
+                  <h3 className="text-white text-center text-2xl font-semibold mb-2">bucket list</h3>
                   <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 min-h-[100px]">
                     {selectedTickers.length === 0 ? (
-                      <p className="text-gray-500 text-center">No tickers selected yet</p>
+                      <p className="text-gray-500 text-center">no tickers selected yet</p>
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
                         {selectedTickers.map((ticker) => (
@@ -324,21 +367,49 @@ const ETFPicker: FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Investment Amount Input */}
+                <div className="w-full mb-8">
+                  <h3 className="text-white text-center text-2xl font-semibold mb-2">investment amount</h3>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <input
+                      type="text"
+                      value={investmentAmount}
+                      onChange={(e) => {
+                        // Only allow numbers and decimal point
+                        const value = e.target.value.replace(/[^0-9.]/g, '')
+                        // Prevent multiple decimal points
+                        if (value.split('.').length <= 2) {
+                          setInvestmentAmount(value)
+                        }
+                      }}
+                      className="w-full p-4 pl-8 text-lg rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-300 shadow-lg"
+                      placeholder="enter amount..."
+                    />
+                  </div>
+                </div>
+
+                {/* Ask Dave Button and Quote - Moved inside the search column */}
+                <div className="flex flex-col items-center mt-4">
+                  <button 
+                    ref={buttonRef}
+                    className="px-12 py-4 bg-white hover:bg-gray-100 text-black text-xl font-bold rounded-2xl shadow-xl transition-colors"
+                    onClick={handleAskDave}
+                  >
+                    {isLoading ? 'thinking...' : 'ask dave'}
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Centered Ask Dave Button */}
-            <div className="w-full flex justify-center">
-              <button 
-                className="relative left-[30%] px-12 py-4 bg-white hover:bg-gray-100 text-black text-xl font-bold rounded-2xl shadow-xl transition-colors"
-                onClick={handleAskDave}
-              >
-                {isLoading ? 'thinking...' : 'ask dave'}
-              </button>
-            </div>
-          </div>
-          <div className="absolute left-[23%] bottom-[8%] mb-[50px] border-b-2 border-white">
-                <SplitText
+            <div 
+              className="border-b-2 border-white absolute transition-all duration-300"
+              style={{ 
+                top: `${buttonPosition.y+15}px`,
+                left: '23%'
+              }}
+            >
+              <SplitText
                 text='"what etf should i buy?"'
                 className="text-3xl text-white font-semibold text-center py-2"
                 delay={150}
@@ -348,8 +419,9 @@ const ETFPicker: FC = () => {
                 threshold={0.2}
                 rootMargin="-50px"
                 onLetterAnimationComplete={handleAnimationComplete}
-                />
+              />
             </div>
+          </div>
         </div>
       </div>
     </main>

@@ -69,20 +69,24 @@ def ask_dave():
 
     try:
         tickers = request.json.get('tickers', [])
+        investment_amount = request.json.get('investmentAmount', 0.0)
         if not tickers:
             return jsonify({'error': 'No tickers provided'}), 400
+        if not investment_amount:
+            return jsonify({'error': 'No investment amount provided'}), 400
 
         # Create the prompt for Gemini
         ticker_list = ', '.join([t['symbol'] for t in tickers])
         prompt = f"""Given these stock tickers: {ticker_list}, 
-        suggest which 4 ETFs would be most suitable for investment. 
+        and this investment amount: {investment_amount}, suggest which 4 ETFs would be most suitable for investment. 
         Select the top 4 ETFs that have the most exposure to the given tickers. If 
         one ETF only has exposure to some tickers and not all, make sure to select
         another ETF in one of the four ETFs that has the most exposure to that given
         ticker. Please give me your answer in the following format for four ETFs. ETF Name, 
         ETF Exposure to the given tickers in percentages (Give a percent for each ticker), and ETF Risk Profile, 
         which will either be High Risk, Medium Risk, or Low Risk. Also provide a rating
-        for High Diversification, Moderate Diversification, or Low Diversification. Please 
+        for High Diversification, Moderate Diversification, or Low Diversification. Please provide the 
+        amount of money you would invest in each ETF.Please 
         don't include any other unnecessary words or phrases or information in your response.
         Just the ETF names, exposure percentages, risk profile, and diversification ratings. If 
         you are not sure about the exposure percentages, do not say moderate or low or highjust say 0%.
@@ -90,30 +94,35 @@ def ask_dave():
         such as "Moderate" or "High" or "Low". Just give me the percentage for each ticker. Make
         sure each ticker has exposure to atleast one ETF that you recommend. Do not include
         unnecessary information such as "I am not a financial advisor" or "I am not a professional"
-        or anything like that. Return the results to me like an actual JSON file like the following:     [
+        or anything like that. If you cannot find any ETFs that contain the specific stock ticker
+        then return me 4 ETFs in the same sector as that stock ticker. Return the results to me like an actual JSON file like the following:     [
         {{
             "ETF Name": "Invesco QQQ Trust (QQQ)",
             "Percentages": ["TSLA: 3-5%", "MSFT: 3-5%", "AAPL: 3-5%"],
             "Risk Level": "High Risk",
-            "Diversification Level": "Moderate Diversification"
+            "Diversification Level": "Moderate Diversification",
+            "Investment Amount": "1000"
         }},
         {{
             "ETF Name": "Technology Select Sector SPDR Fund (XLK)",
             "Percentages": ["TSLA: 0%", "MSFT: 5-7%", "AAPL: 5-7%"],
             "Risk Level": "Medium Risk",
-            "Diversification Level": "Moderate Diversification"
+            "Diversification Level": "Moderate Diversification",
+            "Investment Amount": "1000"
         }},
         {{
             "ETF Name": "SPDR S&P 500 ETF Trust (SPY)",
             "Percentages": ["TSLA: 1-2%", "MSFT: 2-3%", "AAPL: 2-3%"],
             "Risk Level": "Low Risk",
-            "Diversification Level": "High Diversification"
+            "Diversification Level": "High Diversification",
+            "Investment Amount": "1000"
         }},
         {{
             "ETF Name": "ARK Innovation ETF (ARKK)",
             "Percentages": ["TSLA: 9-11%", "MSFT: 0%", "AAPL: 0%"],
             "Risk Level": "High Risk",
-            "Diversification Level": "Low Diversification"
+            "Diversification Level": "Low Diversification",
+            "Investment Amount": "1000"
         }}
         ]"""
 

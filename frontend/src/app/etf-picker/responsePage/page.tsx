@@ -1,7 +1,12 @@
 'use client'
 import { useSearchParams } from 'next/navigation'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, ChartOptions } from 'chart.js'
+import { Pie } from 'react-chartjs-2'
 import Squares from '../../../components/Squares'
 import SplitText from '../../../components/SplitText'
+
+// Register ChartJS components
+ChartJS.register(ArcElement, Tooltip, Legend)
 
 const handleAnimationComplete = () => {
   console.log('All letters have animated!');
@@ -12,6 +17,7 @@ interface ETFData {
   Percentages: string[];
   'Risk Level': string;
   'Diversification Level': string;
+  'Investment Amount': string;
 }
 
 interface ExposureData {
@@ -54,6 +60,64 @@ const ExposureBarChart: React.FC<{ exposures: string[] }> = ({ exposures }) => {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+// Add this component for the pie chart
+const InvestmentPieChart: React.FC<{ etfs: ETFData[] }> = ({ etfs }) => {
+  const data = {
+    labels: etfs.map(etf => etf['ETF Name']),
+    datasets: [
+      {
+        data: etfs.map(etf => parseFloat(etf['Investment Amount'])),
+        backgroundColor: [
+          'rgba(255, 206, 86, 0.8)',  // Yellow
+          'rgba(255, 159, 64, 0.8)',  // Orange
+          'rgba(255, 99, 132, 0.8)',  // Pink
+          'rgba(54, 162, 235, 0.8)',  // Blue
+        ],
+        borderColor: [
+          'rgba(255, 206, 86, 1)',
+          'rgba(255, 159, 64, 1)',
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  }
+
+  const options: ChartOptions<'pie'> = {
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#1f2937',
+          font: {
+            size: 14,
+            weight: 'bold' as const
+          }
+        }
+      },
+      tooltip: {
+        titleFont: {
+          weight: 'bold' as const
+        },
+        bodyFont: {
+          weight: 'bold' as const
+        },
+        titleColor: '#1f2937',
+        bodyColor: '#1f2937',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)'
+      }
+    }
+  }
+
+  return (
+    <div className="w-full max-w-2xl mx-auto mb-12">
+      <h2 className="text-3xl text-gray-800 font-semibold text-center mb-8">Investment Distribution</h2>
+      <Pie data={data} options={options} />
     </div>
   )
 }
@@ -129,8 +193,23 @@ const ResponsePage = () => {
             onLetterAnimationComplete={handleAnimationComplete}
             />
         </div>
+
+        <div className="border-b-2 border-white mb-10">
+            <SplitText
+            text="please note, i'm just dave! click here to connect with a sun life financial advisor"
+            link="https://www.sunlife.ca/en/"
+            className="text-xl text-white font-semibold text-center py-2"
+            delay={150}
+            animationFrom={{ opacity: 0, transform: 'translate3d(0,50px,0)' }}
+            animationTo={{ opacity: 1, transform: 'translate3d(0,0,0)' }}
+            easing="easeOutCubic"
+            threshold={0.2}
+            rootMargin="-50px"
+            onLetterAnimationComplete={handleAnimationComplete}
+            />
+        </div>
         
-        <div className="grid grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 gap-8 max-w-6xl mx-auto mb-10">
           {etfs.map((etf, index) => (
             <div 
               key={index}
@@ -147,6 +226,9 @@ const ResponsePage = () => {
               </div>
             </div>
           ))}
+        </div>
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl p-6 pb-1 shadow-xl">
+            <InvestmentPieChart etfs={etfs} />
         </div>
 
         <div className="flex justify-center mt-12">

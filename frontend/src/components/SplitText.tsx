@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 interface SplitTextProps {
   text?: string;
+  link?: string;
   className?: string;
   delay?: number;
   animationFrom?: object;
@@ -34,6 +35,7 @@ const AnimatedSpan = animated('span' as unknown as React.FC<React.HTMLAttributes
 
 const SplitText = ({
   text = '',
+  link,
   className = '',
   delay = 100,
   animationFrom = { opacity: 0, transform: 'translate3d(0,40px,0)' },
@@ -100,13 +102,14 @@ const SplitText = ({
               .reduce((acc, w) => acc + w.length, 0) + letterIndex;
 
             return (
-              <AnimatedSpan
-                key={index}
-                style={springs[index] as AnimatedSpanProps['style']}
-                className="inline-block transform transition-opacity will-change-transform"
-              >
-                {letter}
-              </AnimatedSpan>
+              <a key={index} href={link} target="_blank" rel="noopener noreferrer">
+                <AnimatedSpan
+                  style={springs[index] as AnimatedSpanProps['style']}
+                  className="inline-block transform transition-opacity will-change-transform"
+                >
+                  {letter}
+                </AnimatedSpan>
+              </a>
             );
           })}
           <span style={{ display: 'inline-block', width: '0.3em' }}>&nbsp;</span>
