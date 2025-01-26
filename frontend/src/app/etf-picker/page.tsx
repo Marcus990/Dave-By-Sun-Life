@@ -24,6 +24,9 @@ const ETFPicker: FC = () => {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [buttonPosition, setButtonPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [investmentAmount, setInvestmentAmount] = useState<string>('')
+  const [showAccountModal, setShowAccountModal] = useState(true)
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const router = useRouter()
 
@@ -261,6 +264,53 @@ const ETFPicker: FC = () => {
 
   return (
     <main className="min-h-screen relative overflow-auto bg-black">
+      {/* Account Selection Modal */}
+      {showAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl p-20 shadow-xl max-w-md w-full mx-8">
+            <h2 className="text-2xl font-bold text-gray-800 text-center mb-6 pb-6">
+              where do you plan on investing?
+            </h2>
+            <div className="grid grid-cols-1 gap-4 items-center justify-center">
+              {['TFSA', 'FHSA', 'RESP', 'RRSP'].map((account) => (
+                <button
+                  key={account}
+                  onClick={() => {
+                    setSelectedAccount(account)
+                    setShowAccountModal(false)
+                    setShowSuccessModal(true)
+                  }}
+                  className="w-full p-6 text-xl font-semibold text-gray-800 bg-gray-100 hover:bg-yellow-100 
+                    rounded-xl transition-colors duration-200"
+                >
+                  {account}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Message Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-2xl p-12 shadow-xl max-w-md w-full mx-8 text-center relative">
+            <h2 className="text-2xl font-bold text-gray-800 mb-8">
+              {selectedAccount === 'TFSA' && 'good choice! investing early for your future is smart!'}
+              {selectedAccount === 'FHSA' && 'great choice! saving early for your first home is smart!'}
+              {selectedAccount === 'RESP' && 'wonderful choice! investing in your education will lead to success!'}
+              {selectedAccount === 'RRSP' && 'incredible choice! planning ahead for retirement is crucial for success!'}
+            </h2>
+            <button
+              onClick={() => setShowSuccessModal(false)}
+              className="px-8 py-3 bg-gray-100 hover:bg-yellow-100 text-gray-800 font-semibold rounded-xl transition-colors duration-200"
+            >
+              continue
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="fixed inset-0 z-0">
         <Squares
           lineColor="#fff"
@@ -406,7 +456,8 @@ const ETFPicker: FC = () => {
               className="border-b-2 border-white absolute transition-all duration-300"
               style={{ 
                 top: `${buttonPosition.y+15}px`,
-                left: '23%'
+                left: '23%',
+                zIndex: 20
               }}
             >
               <SplitText
