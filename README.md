@@ -5,7 +5,7 @@ Say Hello to Dave, your personal, magical, Sun Life Assistant. Don't know what E
 To run front-end: ```cd frontend -> npm run dev```  
 To run back-end on virtual env: ```cd backend -> python3 -m venv venv -> source venv/bin/activate -> python3 run.py```
 
-Tech Stack:
+Tech Stack:  
 Front-End: React, Tailwind CSS, Next.js  
 Back-End: Node.js, Python, Flask  
 Database: MongoDB
